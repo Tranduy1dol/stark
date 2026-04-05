@@ -19,7 +19,7 @@ mod tests {
             Fq::from(4),
         ]);
         let proof = generate_proof(poly, 2, 2); // blowup=2, queries=2
-        assert!(verify(proof).is_ok());
+        assert!(verify(&proof).is_ok());
     }
 
     #[test]
@@ -33,7 +33,7 @@ mod tests {
             Fq::from(6),
         ]);
         let proof = generate_proof(poly, 2, 2);
-        assert!(verify(proof).is_ok());
+        assert!(verify(&proof).is_ok());
     }
 
     #[test]
@@ -46,6 +46,6 @@ mod tests {
         ]);
         let mut proof = generate_proof(poly, 2, 2);
         proof.const_val -= Fq::from(1); // tamper!
-        assert!(verify(proof).is_err());
+        assert!(verify(&proof).is_err());
     }
 }

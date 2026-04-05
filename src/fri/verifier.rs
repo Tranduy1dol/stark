@@ -6,7 +6,7 @@ use crate::{
     fri::prover::{Decommitment, FriProof},
 };
 
-pub fn verify<F: PrimeField>(proof: FriProof<F>) -> anyhow::Result<()> {
+pub fn verify<F: PrimeField>(proof: &FriProof<F>) -> anyhow::Result<()> {
     let mut transcript = Transcript::new(F::ZERO);
     let random_r_list: Vec<F> = proof
         .layers_root
