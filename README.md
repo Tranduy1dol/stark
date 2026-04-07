@@ -57,8 +57,8 @@ cargo test --release bench_naive_vs_fast -- --nocapture  # benchmarks
 
 ## Remaining Work
 
-- [ ] **DEEP-ALI** — out-of-domain sampling for proper soundness (currently the verifier only checks FRI, so tampered traces aren't detected)
-- [ ] **Shared transcript** — unify Fiat-Shamir transcript between STARK and FRI for tighter cryptographic binding
+- [x] **DEEP-ALI** — out-of-domain sampling for proper soundness (currently the verifier only checks FRI, so tampered traces aren't detected)
+- [x] **Shared transcript** — unify Fiat-Shamir transcript between STARK and FRI for tighter cryptographic binding
 - [ ] **Parallelism** — `rayon` for pointwise constraint evaluation loops
 - [ ] **Folding schemes** — Nova-style incremental verification
 - [ ] **Lattice-based commitments** — replace hash-based Merkle with lattice assumptions

@@ -144,13 +144,10 @@ mod tests {
         // Tamper with the trace
         trace[2][0] += Fq::from(1);
 
-        // NOTE: The basic verifier only checks FRI on the composition poly.
-        // The prover's poly division "cleans up" the error, so FRI still passes.
-        // Detecting tampered traces requires DEEP-ALI (future improvement).
         let mut prover_transcript = Transcript::new(Fq::zero());
         let proof = prove(trace, &air, &mut prover_transcript);
 
         let mut verifier_transcript = Transcript::new(Fq::zero());
-        assert!(verify(&proof, &air, &mut verifier_transcript).is_ok()); // sadly passes with basic verifier
+        assert!(verify(&proof, &air, &mut verifier_transcript).is_err());
     }
 }

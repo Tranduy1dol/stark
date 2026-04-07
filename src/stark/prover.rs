@@ -20,8 +20,10 @@ use super::quotient::*;
 #[derive(Clone, Debug)]
 pub struct StarkProof<F: PrimeField> {
     pub fri_proof: FriProof<F>,
-    pub trace_evaluations: Vec<F>,
     pub trace_roots: Vec<F>,
+    pub trace_evals_at_z: Vec<F>,
+    pub trace_evals_at_omega_z: Vec<F>,
+    pub composition_eval_at_z: F,
 }
 
 pub fn prove_fast<F: PrimeField>(
@@ -63,6 +65,21 @@ pub fn prove_fast<F: PrimeField>(
         let root = tree.root();
         trace_roots.push(root);
         transcript.digest(root);
+    }
+
+    let z = transcript.generate_a_challenge();
+    let mut trace_evals_at_z = Vec::new();
+    let mut trace_evals_at_omega_z = Vec::new();
+
+    for trace_poly in &trace_polys {
+        trace_evals_at_z.push(trace_poly.evaluate(&z));
+        trace_evals_at_omega_z.push(trace_poly.evaluate(&(omega * z)));
+    }
+    for eval in &trace_evals_at_z {
+        transcript.digest(*eval);
+    }
+    for eval in &trace_evals_at_omega_z {
+        transcript.digest(*eval);
     }
 
     // Precompute eval points: x_j = coset · η^j
@@ -121,14 +138,20 @@ pub fn prove_fast<F: PrimeField>(
         }
     }
 
-    let composition =
-        Evaluations::from_vec_and_domain(composition_evals, eval_domain).interpolate();
+    let coset_poly = Evaluations::from_vec_and_domain(composition_evals, eval_domain).interpolate();
+    let coset_inv = coset.inverse().expect("coset must be invertible");
+    let composition = shift_poly(&coset_poly, coset_inv);
+    let composition_eval_at_z = composition.evaluate(&z);
+    transcript.digest(composition_eval_at_z);
+
     let fri_proof = generate_proof(composition, blowup_factor, num_queries, transcript);
 
     StarkProof {
         fri_proof,
-        trace_evaluations: vec![],
+        trace_evals_at_z,
+        trace_evals_at_omega_z,
         trace_roots,
+        composition_eval_at_z,
     }
 }
 
@@ -142,6 +165,7 @@ pub fn prove<F: PrimeField>(
     let num_queries = 16;
 
     let domain = domain(t);
+    let omega = domain.group_gen();
     let trace_polys = interpolate_trace(&trace);
 
     let mut trace_roots = Vec::with_capacity(t);
@@ -151,6 +175,21 @@ pub fn prove<F: PrimeField>(
 
         trace_roots.push(root);
         transcript.digest(root);
+    }
+
+    let z = transcript.generate_a_challenge();
+    let mut trace_evals_at_z = Vec::new();
+    let mut trace_evals_at_omega_z = Vec::new();
+
+    for trace_poly in &trace_polys {
+        trace_evals_at_z.push(trace_poly.evaluate(&z));
+        trace_evals_at_omega_z.push(trace_poly.evaluate(&(omega * z)));
+    }
+    for eval in &trace_evals_at_z {
+        transcript.digest(*eval);
+    }
+    for eval in &trace_evals_at_omega_z {
+        transcript.digest(*eval);
     }
 
     let mut all_quotients = boundary_quotients(&trace_polys, &air.boundary_constraints, &domain);
@@ -163,10 +202,16 @@ pub fn prove<F: PrimeField>(
         composition = composition + quotient * DensePolynomial::from_coefficients_vec(vec![weight]);
     }
 
+    let composition_eval_at_z = composition.evaluate(&z);
+    transcript.digest(composition_eval_at_z);
+
     let fri_proof = generate_proof(composition, blowup_factor, num_queries, transcript);
+
     StarkProof {
         fri_proof,
-        trace_evaluations: vec![],
+        trace_evals_at_z,
+        trace_evals_at_omega_z,
         trace_roots,
+        composition_eval_at_z,
     }
 }
